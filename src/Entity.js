@@ -2,61 +2,79 @@ class Entity {
     constructor() { 
         this.name = null; 
         this.parent = null;
-        this.components = [];
-        this.componentCount= 0;
-        this.loadedModel = new THREE.Group();
-        
-    }
-
-    loadComponents() {
-        let camera = null;
-        let child;
-        let prevChild;
-        for (let i =0; i < this.componentCount; i++) {
-            console.log(this.components[i])
-            try{
-                child = this.components[i].getTarget();
-                if (this.components[i].getName() == 'object'){
-                    console.log("found the object component")
-                    prevChild = child 
-                    continue;
-                }
-                if (this.components[i].getName()== 'appearance') {
-                    console.log("prevChild is:")
-                    console.log(prevChild);
-                    let object = new THREE.Mesh(prevChild, child);
-                    child = object
-                }
-                if (this.components[i].getName() == 'position') {
-                    this.loadedModel.position.x = child.x;
-                    this.loadedModel.position.y = child.y;
-                    this.loadedModel.position.z = child.z;
-                    continue;
-                }
-
-                this.addChild(child)
-                // prevChild = 
-                if (this.components[i].getName() == 'camera') {
-                    camera = child;
-                }
-            } catch (error) {
-                console.warn(error);
-            }
+        this.components = {
+            object: null,
+            appearance: null,
+            position: null, 
+            camera: null,
+            animations: null
         }
-        return camera;
-    }
-
-    addChild( child ) {
-        this.loadedModel.add(child);
+        this.componentCount= 0;
+        this.children = [];
         return this;
     }
 
-    setLoadedModel(object) {
-        this.loadedModel = object;
+    // loadComponents() {
+    //     let camera = null;
+    //     let child;
+    //     let prevChild;
+    //     for (let i =0; i < this.componentCount; i++) {
+    //         console.log(this.components[i])
+    //         try{
+    //             console.log(this.components[i].getName())
+    //             if (this.components[i].getName() == "animation") {
+    //                 console.log("[revious child for animation")
+    //                 console.log(prevChild);
+    //                 this.components[i].setMesh(prevChild);
+    //                 continue;
+    //             }
+
+    //             child = this.components[i].getTarget();
+    //             if (this.components[i].getName() == 'object'){
+    //                 console.log("found the object component")
+    //                 prevChild = child 
+    //                 continue;
+    //             }
+    //             if (this.components[i].getName()== 'appearance') {
+    //                 console.log("prevChild is:")
+    //                 console.log(prevChild);
+    //                 let object = new THREE.Mesh(prevChild, child);
+    //                 child = object
+    //                 prevChild = child;
+    //             }
+    //             if (this.components[i].getName() == 'position') {
+    //                 this.loadedModel.position.x = child.x;
+    //                 this.loadedModel.position.y = child.y;
+    //                 this.loadedModel.position.z = child.z;
+    //                 continue;
+    //             }
+
+                
+
+    //             this.addChild(child)
+    //             // prevChild = 
+    //             if (this.components[i].getName() == 'camera') {
+    //                 camera = child;
+    //             }
+    //         } catch (error) {
+    //             console.warn(error);
+    //         }
+    //     }
+    //     return camera;
+    // }
+
+    addChild( child ) {
+        this.children.push(child)
+        return this;
     }
 
-    getLoadedObject() {
-        return this.loadedModel;
+    addToScene( object ) {
+        try {
+            let group = this.getComponent("object").getTarget();
+            group.add(object);
+        } catch (error) {
+            console.warn(error);
+        }
     }
 
     getLoadStatus() {
@@ -83,21 +101,27 @@ class Entity {
         }
         return this.parent;
     }
+
     setParent( entity ) {
         console.log(`setting parent of ${this.getName()} to ${entity.getName()}`)
         this.parent = entity;
+        entity.addChild(this)
+        return this
     }
 
     removeParent() {
         this.parent = null;
+        return this;
     }
 
     removeName() {
         this.name = null;
+        return this;
     }
 
     setName(name) {
         this.name = name;
+        return this;
     }
 
     getName() {
@@ -105,8 +129,9 @@ class Entity {
     }
 
     addComponent( component ) {
-        this.components.push(component)
+        this.components[component.getName()] = component;
         this.componentCount+= 1;
+        return this;
     } 
 
     removeComponent( compName ) {
@@ -114,7 +139,7 @@ class Entity {
             if (this.components[i].getName() == compName ){
                 this.components.splice(i, 1);
                 this.componentCount -= 1;
-                return 
+                return this
             }
         }
         throw new Error(`component ${compName} cannot be found in list of ${this.name}'s components`);
@@ -135,13 +160,14 @@ class Entity {
     }
 
     getComponent( compName ) {
-        for (let i =0; i < this.componentCount; i++) {
-            if (this.components[i].getName() == compName){
-                return this.components[i];
-            }
-        }   
-
-        throw new Error(`${this.getName()} does not contain a component with the name ${compName}`);
+        let component;
+        try{
+            component = this.components[compName]; 
+        } catch (error) {
+            console.warn(error);
+        } finally {
+            return component
+        }
     } 
 
 
@@ -150,7 +176,6 @@ class Entity {
 class Entity_Scene extends Entity {
     constructor() {
         super()
-        super.setName('scene');
-        super.setLoadedModel(new THREE.Scene());
+        super.setName('scene').addComponent(new Component_Object(this).setObject({type: 'geometry', object: new THREE.Scene()}));
     }
 }

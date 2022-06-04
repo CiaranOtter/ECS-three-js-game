@@ -1,11 +1,12 @@
+const clock = new THREE.Clock();
 class System {
     constructor(game) {
         this.game = game;
         this.entities =[];
         this.entityCount = 0;
         this.renderer = new THREE.WebGLRenderer();
-        this.camera;
-        
+        this.cameras = [];
+        this.scene;
     }
 
     init() {
@@ -14,10 +15,22 @@ class System {
 
         window.addEventListener('resize', this.onWindowResize, false);
 
-        this.loadEntities();
+        // console.group("starting to load entites")
+        // this.loadEntities();
+        // console.groupEnd()
+        console.group("starting to build scene")
+        console.log(this.entities)
         this.buildScene();
+        console.groupEnd()
+        console.group("starting to render scene")
         this.renderScene();
-        this.animate();
+        console.groupEnd()
+        // this.animate();
+    }
+
+    setScene( scene ) {
+        this.scene = scene;
+        return this;
     }
 
     addEntity( entity ) {
@@ -25,29 +38,36 @@ class System {
         console.log(entity)
         this.entities.unshift(entity);
         this.entityCount += 1;
+        return this;
     }
 
+    addCamera( camera ) {
+        this.cameras.push(camera);
+        return this;
+    }
 
     loadEntities() {
-        for (let i =0;  i < this.entityCount; i++) {
-            let camera = this.entities[i].loadComponents();
-            if (camera != null) {
-                this.camera = camera;
-            }
-        }
+        
     }
 
     buildScene() {
         for (let i =0; i < this.entityCount; i++) {
             try {
-                let loadedModel = this.entities[i].getLoadedObject();
+                let object = this.entities[i].getComponent('object').getTarget();
                 let parent = this.entities[i].getParent();
-                parent.addChild(loadedModel);
+
+                console.group(`attempting to add ${this.entities[i].getName()} to ${parent.getName()}:`);
+                console.log(object);
+                console.groupEnd();
+
+                parent.addToScene(object);
             } catch (error) {
 
             }
             
         }
+
+        console.log("scene has been built")
     }
 
     animate() {
@@ -58,16 +78,33 @@ class System {
         // this.loadEntities();
         // this.renderScene();
         // console.timeLog()
+
+        const delta = clock.getDelta();
+        this.update(delta);
+    }
+
+    update( delta ) {
+        for (let i =0; i < this.entityCount; i++) {
+            try{
+                this.entities[i].getComponent('animation').update(delta)
+            } catch (error) {
+
+            }
+        }
     }
     renderScene() {
         console.log(this.entities);
-        let scene = this.findEntity('scene').getLoadedObject();
         console.log("scene object is:");
-        console.log(scene)
+        console.log(this.scene)
+        console.log(this.scene.getComponent('object'))
+        console.log(this.scene.getComponent('object').getTarget())
 
         console.log("camera is: ")
-        console.log(this.camera);
-        this.renderer.render(scene, this.camera);
+        console.log(this.cameras);
+        for (let i =0; i < this.cameras.length; i++) {
+            this.renderer.render(this.scene.getComponent('object').getTarget(), this.cameras[i]);
+        }
+        
     }
 
     findEntity( name ) {

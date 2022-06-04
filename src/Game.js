@@ -3,24 +3,65 @@ class Game {
         console.log("New game created");
         this.System = new System(this);
         this.init();
-        this.System.init();
-        
+        this.System.init();   
     }
 
     init() {
-        console.log("game initialsed")
-        const scene = new Entity_Scene();
-        this.System.addEntity(scene)
+        const scene = new Entity_Scene().setName('scene');
+        this.System.addEntity(scene).setScene(scene);
 
-        const cube1 = new Entity()
-        cube1.setName("cube1");
-        cube1.setParent(scene) 
-        cube1.addComponent(new component_Light())
-        cube1.addComponent(new Component_Camera({type: 'third_person'}))
-        cube1.addComponent(new Component_Object().setObject(new THREE.BoxGeometry(1,1,1)));
-        cube1.addComponent(new Component_Appearance().setAppearance({color: 0xff0000}))
-        cube1.addComponent(new Component_Position({x: 5, y: 0, z: 0}));
-        this.System.addEntity(cube1);
+        const playerGroup = new Entity();
+
+        playerGroup.setName("player-group")
+        .setParent(scene)
+        .addComponent(new Component_Object(playerGroup).setObject({type: 'geometry', object: new THREE.Group()}))
+        this.System.addEntity(playerGroup);
+
+        const playerLight = new Entity();
+        playerLight.setName('player-light')
+        .setParent(playerGroup)
+        .addComponent(new Component_Light(playerLight).setObject({
+            type: 'point',
+            colour: 0xffffff,
+            intensity: 1,
+            decay: 2
+        }));
+
+        this.System.addEntity(playerLight);
+
+        const playerCharacter = new Entity()
+        playerCharacter.setName('player-character')
+        .setParent(playerGroup)
+        .addComponent(new Component_Object(playerCharacter).setObject({type: 'gltfmodel', object: './character/scene.gltf'}));
+
+        this.System.addEntity(playerCharacter);
+
+        const playerCamera = new Entity();
+        playerCamera.setName("player-camera")
+        .setParent(playerGroup)
+        .addComponent(new Component_Camera(playerCamera).setObject({
+            type: "third_person",
+            fov: 40,
+            aspectRatio: window.innerWidth/window.innerHeight,
+            near: 0.1,
+            far: 1000
+        }))
+
+        this.System.addEntity(playerCamera).addCamera(playerCamera.getComponent('object').getTarget());
+        console.log("game initialsed")
+        // const scene = new Entity_Scene();
+        // this.System.addEntity(scene)
+
+        // const cube1 = new Entity()
+        // cube1.setName("cube1");
+        // cube1.setParent(scene) 
+        // cube1.addComponent(new component_Light())
+        // cube1.addComponent(new Component_Camera({type: 'third_person'}))
+        // cube1.addComponent(new Component_Object().setObject(new THREE.BoxGeometry(1,1,1)));
+        // cube1.addComponent(new Component_Appearance().setAppearance({color: 0xff0000}))
+        // cube1.addComponent(new Component_Position({x: 5, y: 0, z: 0}));
+        // cube1.addComponent(new Component_animation())
+        // this.System.addEntity(cube1);
 
     }  
 
